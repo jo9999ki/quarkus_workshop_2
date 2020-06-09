@@ -42,4 +42,8 @@ public class Item extends PanacheEntity{
 		 return list("level = :level and project.id = :projectid",
 	         Parameters.with("level", level).and("projectid", projectid));
 	}
+	
+	public static List<Item> findByProjectId(Long projectid){
+		 return list("project.id", projectid);
+	}
 }

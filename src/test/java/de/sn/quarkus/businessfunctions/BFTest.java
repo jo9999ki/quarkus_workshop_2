@@ -1,7 +1,11 @@
 package de.sn.quarkus.businessfunctions;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
+import static javax.ws.rs.core.Response.Status.CREATED;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -20,6 +24,7 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.ValidatableResponse;
 
 @QuarkusTest
 @TestMethodOrder(OrderAnnotation.class)
@@ -153,11 +158,76 @@ public class BFTest {
 	}
 	
 	@Test
-    public void testHelloEndpoint() {
+	@Order(20)
+    public void testRESTProjectGetAll() {
         given()
-          .when().get("/businessfunctions")
+          .when().get("/projects")
           .then()
-             .statusCode(200)
-             .body(is("hello"));
+             .statusCode(OK.getStatusCode())
+             //.log().body()
+             .body("id", notNullValue())
+         	 .body("name", notNullValue());
+    }
+	@Test
+	@Order(21)
+    public void testRESTProjectGetById() {
+     	given()
+          .when().get("/projects/1")
+          .then()
+          	 //.log().body()
+             .statusCode(OK.getStatusCode())
+             .body("id", equalTo(1))
+             .body("name", equalTo("Test Projekt"));
+    }
+	
+	@Test
+	@Order(22)
+    public void testRESTProjectAddNewProject() {
+        Project project = new Project();
+        project.id = null;
+        project.name = "Test Projekt 3";
+        //Items will not be added here
+        
+		ValidatableResponse response = given().contentType("application/json")
+                .body(project)
+        		.when().post("/projects")
+                .then()
+	                //.log().body()
+	                .statusCode(CREATED.getStatusCode())
+                	.body("id", notNullValue())
+                	.body("name", equalTo("Test Projekt 3"));
+
+        BFTest.identifier = Long.parseLong(response.extract().body().
+        		jsonPath().get("id").toString());
+        assertEquals(true,true);
+    }
+	
+	  @Test
+	   @Order(23)
+	    public void testRestPut() {
+	      Project project = new Project();
+	      project.id = BFTest.identifier;
+	      project.name= "TestTest";
+		  ValidatableResponse response = given().contentType("application/json")
+	        		.body(project)
+	                .when().put("/projects")
+	                .then()
+	                	//.log().body()
+	                	.statusCode(OK.getStatusCode())
+	                	//.body("id", is(book.id)) 
+	                	//-> this doesn't work for long or double values. Need to use JSON Path after
+	                	.body("name", equalTo("TestTest"));
+	        
+	        Long id = Long.parseLong(response.extract().body().
+	        		jsonPath().get("id").toString());
+	        assertEquals(id, (Long) BFTest.identifier);
+	    }
+	 
+	@Test
+    @Order(29)
+    public void testRESTProjectDelete() {
+	     given()
+              .when().delete("/projects/"+ BFTest.identifier)
+              .then().statusCode(NO_CONTENT.getStatusCode());
     }
 }
