@@ -17,7 +17,7 @@ public class Project extends PanacheEntity{
 	
 	//Items in project
 	@OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-	public List<Item> Items;
+	public List<Item> items;
 	
 	//Customized queries
 	public static List<Project> findAllByNameLike(String name){
