@@ -1,18 +1,18 @@
 package de.sn.quarkus.businessfunctions;
 
 import static io.restassured.RestAssured.given;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -259,7 +259,7 @@ public class BFTest {
         
 		ValidatableResponse response = given().contentType("application/json")
                 .body(item)
-        		.when().post("/items/project/2?pageNum=0&pageSize=5")
+        		.when().post("/items/project/2")
                 .then()
 	                //.log().body()
 	                .statusCode(CREATED.getStatusCode())
@@ -311,7 +311,7 @@ public class BFTest {
         		.body(item)
                 .when().put("/items")
                 .then()
-                	.log().body()
+                	//.log().body()
                 	.statusCode(OK.getStatusCode())
                 	.body("name", equalTo("mainmain"))
                 	.body("level", equalTo(0))
@@ -326,7 +326,7 @@ public class BFTest {
     public void testRESTItemGetAllByProjectId() {
 		ValidatableResponse response =
 		given()
-          .when().get("/items/project/2")
+          .when().get("/items/project/2?pageNum=0&pageSize=5")
           .then()
              .statusCode(OK.getStatusCode())
              //.log().body()
@@ -358,7 +358,7 @@ public class BFTest {
      	given()
           .when().get("/items/" + BFTest.identifier)
           .then()
-          	 .log().body()
+          	 //.log().body()
              .statusCode(OK.getStatusCode())
             	.body("id", notNullValue())
             	.body("name", equalTo("mainmain"))
@@ -377,5 +377,46 @@ public class BFTest {
          .when().delete("/items/"+ BFTest.identifier)
          .then()
          .statusCode(NO_CONTENT.getStatusCode());
+    }
+	
+	@Test
+	@Order(40)
+    public void testRESTItemPostInputValidationMandatory() {
+        Item item = new Item();;
+        item.name = null;
+        item.level = null;
+        item.imageURL = null;
+
+        ValidatableResponse response = given().contentType("application/json").body(item)
+                .when().post("/items/project/2")
+                .then()
+                    //.log().body()
+                    .statusCode(BAD_REQUEST.getStatusCode())
+                    .body("errorList.findAll {it.code == \"400001\" && it.parameter == \"addMainItem.item.name\" && it.value == \"\"}.message",  
+                    		hasItem("item name cannot be blank"))
+                    .body("errorList.findAll {it.code == \"400001\" && it.parameter == \"addMainItem.item.level\" && it.value == \"\"}.message",  
+                    		hasItem("item level cannot be blank"));
+    }
+	
+	@Test
+	@Order(41)
+    public void testRESTItemPostAddMainItemNotExistingIds() {
+        Item item = new Item();
+        item.project = null;
+        item.name = "sub project 2";
+        item.imageURL = "sub.jpg";
+        item.level = 1;
+        Item mainItem = Item.findById(10L);
+        item.item = mainItem;
+       
+		ValidatableResponse response = 
+				given().contentType("application/json")
+                .body(item)
+        		.when().post("/items/project/1000/item/1000")
+                .then()
+	                .log().body()
+                    .statusCode(BAD_REQUEST.getStatusCode())
+                    .body("errorList.findAll {it.code == \"40005\"}.message",  
+                    		hasItem("Project with id 1000 does not exist"));
     }
 }

@@ -5,6 +5,8 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
+import javax.validation.Valid;
+import javax.validation.Validator;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -33,6 +35,8 @@ public class ProjectResource {
 	
 	@Inject
     EntityManager em;
+	
+	@Inject Validator validator;
 
 	@GET
     public Response getPagableList( 
@@ -64,7 +68,7 @@ public class ProjectResource {
     }
 	
 	@POST
-	public Response add(Project project) {
+	public Response add(@Valid Project project) {
 		project.id = null;
 		//Items will not be stored in this method
 		if (project.items != null) project.items.clear();
@@ -73,7 +77,7 @@ public class ProjectResource {
 	}
 	
 	@PUT
-	 public Response change(Project project) {
+	 public Response change(@Valid Project project) {
 	 	Project myProject  = Project.findById(project.id);
     	if (myProject != null) {
     		myProject.name = project.name;

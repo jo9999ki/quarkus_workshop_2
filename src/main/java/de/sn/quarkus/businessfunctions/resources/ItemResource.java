@@ -1,11 +1,12 @@
 package de.sn.quarkus.businessfunctions.resources;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
+import javax.validation.Valid;
+import javax.validation.Validator;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -22,6 +23,7 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
+import de.jk.quarkus.trains.exception.RecordNotFoundException;
 import de.sn.quarkus.businessfunctions.model.Item;
 import de.sn.quarkus.businessfunctions.model.Project;
 import io.quarkus.panache.common.Page;
@@ -34,6 +36,9 @@ public class ItemResource {
 	
 	@Inject
     EntityManager em;
+	
+	@Inject 
+	Validator validator;
 
 	@GET
 	@Path("/project/{projectid}")
@@ -85,11 +90,11 @@ public class ItemResource {
 	@Path("/project/{projectid}")
 	public Response addMainItem(
 			@PathParam("projectid") @NotNull Long projectid,
-			Item item) throws Exception{
+			@Valid Item item) throws Exception{
 		
 			Project project = Project.findById(projectid);
 			if (project == null) {	
-				throw new Exception("Project with id " + projectid +" does not exist");
+				throw new RecordNotFoundException("Project with id " + projectid +" does not exist");
 			}
 			item.id = null;
 			item.project = project;
@@ -97,7 +102,7 @@ public class ItemResource {
 			if (item.item != null) {
 				itemAbove = Item.findById(item.item.id);
 				if (itemAbove == null) {
-					throw new Exception("Item with id " + item.item.id +" does not exist");
+					throw new RecordNotFoundException("Item with id " + item.item.id +" does not exist");
 				}
 				item.item = itemAbove;
 			}
@@ -115,16 +120,16 @@ public class ItemResource {
 	public Response addSubItem(
 			@PathParam("projectid") @NotNull Long projectid,
 			@PathParam("itemabove") @NotNull Long itemAboveId,
-			Item item) throws Exception{
+			@Valid Item item) throws Exception{
 		
 			Project project = Project.findById(projectid);
 			if (project == null) {	
-				throw new Exception("Project with id " + projectid +" does not exist");
+				throw new RecordNotFoundException("Project with id " + projectid +" does not exist");
 			}
 			
 			Item itemAbove = Item.findById(itemAboveId);
 			if (itemAbove == null) {
-				throw new Exception("Item with id " + item.item.id +" does not exist");
+				throw new RecordNotFoundException("Item with id " + item.item.id +" does not exist");
 			}
 			item.id = null;
 			item.item = itemAbove; //Addmain item			
@@ -145,8 +150,8 @@ public class ItemResource {
     		myItem.name = item.name;
     		myItem.imageURL = item.imageURL;
     		myItem.level = item.level;
-    		myItem.persist();
-    		return Response.status(Response.Status.OK).entity(myItem).build();
+    		Item storedItem = em.merge(myItem);
+    		return Response.status(Response.Status.OK).entity(storedItem).build();
     	}else {
     		return Response.status(Response.Status.NOT_FOUND).build();
     	}
@@ -164,8 +169,6 @@ public class ItemResource {
     	if (item.items.size() > 0) {
     		throw new Exception("Item contains sub items, which have to be deleted before!");
     	}    		
-        	
-		Project project = null;
 
     	//Delete item from project
 		item.project.items.remove(item);

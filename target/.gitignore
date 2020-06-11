@@ -1,4 +1,10 @@
 /classes/
 /test-classes/
-/de.sn.quarkus-dev.jar
-/target
+/target/
+/de.sn.quarkus-1.0.0-SNAPSHOT-runner.jar
+/de.sn.quarkus-1.0.0-SNAPSHOT.jar
+/lib/
+/maven-archiver/
+/maven-status/
+/quarkus/
+/surefire-reports/
