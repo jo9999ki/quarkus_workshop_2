@@ -23,7 +23,7 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
-import de.jk.quarkus.trains.exception.RecordNotFoundException;
+import de.sn.quarkus.businessfunctions.exception.RecordNotFoundException;
 import de.sn.quarkus.businessfunctions.model.Item;
 import de.sn.quarkus.businessfunctions.model.Project;
 import io.quarkus.panache.common.Page;
