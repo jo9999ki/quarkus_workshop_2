@@ -5,7 +5,6 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
-import javax.validation.ConstraintViolationException;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -87,14 +86,12 @@ public class ProjectResource {
 	
 	@DELETE
     @Path("/{id}")
-	public Response delete(@PathParam("id") Long id) {
+	public Response delete(@PathParam("id") Long id) throws Exception{
     	Project project  = Project.findById(id);
     	if (project != null) {
-    		List<Item> items = Item.findByProjectId(id);
+    		List<Item> items = Item.findByProjectId(id).list();
     		if (items != null){
-	    		for (int i = 0; i < items.size(); i++) {
-					items.get(i).delete();
-				}
+    			if (items.size() > 0) throw new Exception("Project contains items, which must be deleted before!");
 			}
     		project.delete();
         	return Response

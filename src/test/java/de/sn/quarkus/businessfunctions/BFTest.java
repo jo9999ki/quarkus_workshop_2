@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
+import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -31,7 +33,8 @@ import io.restassured.response.ValidatableResponse;
 public class BFTest {
 	
 	private static long identifier;
-	
+	private static long identifier1;
+		
 	@Test
 	@Transactional
 	@Order(1)
@@ -131,7 +134,7 @@ public class BFTest {
 		newItem.imageURL = "main.jpg";
 		newItem.persist();
 				
-		List<Item> itemList = Item.findByLevelAndProjectId(0, 2L);
+		List<Item> itemList = Item.findByLevelAndProjectId(0, 2L).list();
 		assertEquals("main", itemList.get(0).name);
 		BFTest.identifier = itemList.get(0).id;
 	}
@@ -152,16 +155,28 @@ public class BFTest {
 	@Transactional
 	@Order(13)
 	public void testItemDeleteRecord() {
-		Item.deleteById(BFTest.identifier);
+		Item item = Item.findById(BFTest.identifier);
+		Project project = null;
+		//Delete item from project
+		if (item.project != null) {
+    		item.project.items.remove(item);
+		}
+		//Delete item from item above
+		if (item.item != null) {
+			item.item.items.remove(item);
+		}
+		//Don't care for subitems - to be removed before
+		//Delete item
+		item.delete();
 		Item deletedItem = Item.findById(BFTest.identifier);
-		assertEquals(null, deletedItem);
+		assertEquals(null, deletedItem);	
 	}
 	
 	@Test
 	@Order(20)
     public void testRESTProjectGetAll() {
         given()
-          .when().get("/projects")
+          .when().get("/projects?pageNum=0&pageSize=5")
           .then()
              .statusCode(OK.getStatusCode())
              //.log().body()
@@ -229,5 +244,138 @@ public class BFTest {
 	     given()
               .when().delete("/projects/"+ BFTest.identifier)
               .then().statusCode(NO_CONTENT.getStatusCode());
+    }
+	
+	@Test
+	@Order(30)
+    public void testRESTItemAddNewMainItem() {
+        Item item = new Item();
+        item.project = null;
+        item.name = "main project 2";
+        item.imageURL = "main.jpg";
+        item.level = 0;
+        item.item = null;
+        item.items = null;
+        
+		ValidatableResponse response = given().contentType("application/json")
+                .body(item)
+        		.when().post("/items/project/2?pageNum=0&pageSize=5")
+                .then()
+	                //.log().body()
+	                .statusCode(CREATED.getStatusCode())
+                	.body("id", notNullValue())
+                	.body("name", equalTo("main project 2"));
+
+        BFTest.identifier = Long.parseLong(response.extract().body().
+        		jsonPath().get("id").toString());
+        assertEquals(true,true);
+    }
+	
+	@Test
+	@Order(31)
+    public void testRESTItemAddNewSubItem() {
+        Item item = new Item();
+        item.project = null;
+        item.name = "sub project 2";
+        item.imageURL = "sub.jpg";
+        item.level = 1;
+        Item mainItem = Item.findById(10L);
+        item.item = mainItem;
+       
+		ValidatableResponse response = 
+				given().contentType("application/json")
+                .body(item)
+        		.when().post("/items/project/2/item/10")
+                .then()
+	                //.log().body()
+	                .statusCode(CREATED.getStatusCode())
+                	.body("id", notNullValue())
+                	.body("name", equalTo("sub project 2"))
+                	.body("imageURL", equalTo("sub.jpg"))
+                	.body("level", equalTo(1));
+
+        BFTest.identifier1 = Long.parseLong(response.extract().body().
+        		jsonPath().get("id").toString());
+        assertEquals(true,true);
+    }
+
+   @Test
+   @Order(32)
+    public void testRestItemUpdate() {
+	   Item item = new Item();
+      item.id = BFTest.identifier;
+      item.name= "mainmain";
+      item.level=0;
+      item.imageURL="mainmain.jpg";
+	  ValidatableResponse response = given().contentType("application/json")
+        		.body(item)
+                .when().put("/items")
+                .then()
+                	.log().body()
+                	.statusCode(OK.getStatusCode())
+                	.body("name", equalTo("mainmain"))
+                	.body("level", equalTo(0))
+                	.body("imageURL", equalTo("mainmain.jpg"));
+        
+        Long id = Long.parseLong(response.extract().body()
+        		.jsonPath().get("id").toString());
+        assertEquals(id, (Long) BFTest.identifier);
+    }
+	@Test
+	@Order(33)
+    public void testRESTItemGetAllByProjectId() {
+		ValidatableResponse response =
+		given()
+          .when().get("/items/project/2")
+          .then()
+             .statusCode(OK.getStatusCode())
+             //.log().body()
+             .body("id", notNullValue())
+         	 .body("name", notNullValue());
+		
+		Integer listSize = response.extract().body().jsonPath().getList("$").size();
+		assertEquals(2, listSize);
+    }
+	
+	@Test
+	@Order(34)
+    public void testRESTItemGetAllByProjectIdAndLevel() {
+		ValidatableResponse response =
+		given()
+          .when().get("/items/project/2/level/0")
+          .then()
+             .statusCode(OK.getStatusCode())
+             //.log().body()
+             .body("id", notNullValue())
+         	 .body("name", notNullValue());
+		
+		Integer listSize = response.extract().body().jsonPath().getList("$").size();
+		assertEquals(1, listSize);
+    }
+	@Test
+	@Order(35)
+    public void testRESTItemGetById() {
+     	given()
+          .when().get("/items/" + BFTest.identifier)
+          .then()
+          	 .log().body()
+             .statusCode(OK.getStatusCode())
+            	.body("id", notNullValue())
+            	.body("name", equalTo("mainmain"))
+            	.body("imageURL", equalTo("mainmain.jpg"))
+            	.body("level", equalTo(0));
+    }
+	
+	@Test
+    @Order(39)
+    public void testRESTItemDelete() {
+	     given()
+              .when().delete("/items/"+ BFTest.identifier1)
+              .then().statusCode(NO_CONTENT.getStatusCode());
+	     
+	     given()
+         .when().delete("/items/"+ BFTest.identifier)
+         .then()
+         .statusCode(NO_CONTENT.getStatusCode());
     }
 }
