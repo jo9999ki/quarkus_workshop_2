@@ -414,7 +414,7 @@ public class BFTest {
                 .body(item)
         		.when().post("/items/project/1000/item/1000")
                 .then()
-	                .log().body()
+	                //.log().body()
                     .statusCode(BAD_REQUEST.getStatusCode())
                     .body("errorList.findAll {it.code == \"40005\"}.message",  
                     		hasItem("Project with id 1000 does not exist"));

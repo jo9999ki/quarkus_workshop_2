@@ -23,6 +23,7 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
+import de.sn.quarkus.businessfunctions.exception.BusinessException;
 import de.sn.quarkus.businessfunctions.exception.RecordNotFoundException;
 import de.sn.quarkus.businessfunctions.model.Item;
 import de.sn.quarkus.businessfunctions.model.Project;
@@ -167,7 +168,7 @@ public class ItemResource {
     	}
     	
     	if (item.items.size() > 0) {
-    		throw new Exception("Item contains sub items, which have to be deleted before!");
+    		throw new BusinessException("40009", "Item contains sub items, which have to be deleted before!");
     	}    		
 
     	//Delete item from project

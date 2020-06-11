@@ -23,6 +23,7 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
+import de.sn.quarkus.businessfunctions.exception.BusinessException;
 import de.sn.quarkus.businessfunctions.model.Item;
 import de.sn.quarkus.businessfunctions.model.Project;
 import io.quarkus.panache.common.Page;
@@ -44,10 +45,10 @@ public class ProjectResource {
     		@QueryParam("pageSize") @DefaultValue("10") @Min(0) int pageSize) {
     	
 		long timestamp = System.currentTimeMillis();
-		List<Project> locomotives = Project
+		List<Project> projects = Project
     			.findAll().page(Page.of(pageNum, pageSize)).list();
     	return Response
-    			.ok(locomotives)
+    			.ok(projects)
         		.header("responsetime", (System.currentTimeMillis() - timestamp))
     			.build();
     }
@@ -95,7 +96,7 @@ public class ProjectResource {
     	if (project != null) {
     		List<Item> items = Item.findByProjectId(id).list();
     		if (items != null){
-    			if (items.size() > 0) throw new Exception("Project contains items, which must be deleted before!");
+    			if (items.size() > 0) throw new BusinessException("40009","Project contains items, which must be deleted before!");
 			}
     		project.delete();
         	return Response
