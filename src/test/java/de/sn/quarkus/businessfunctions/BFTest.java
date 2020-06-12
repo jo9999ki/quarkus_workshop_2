@@ -275,12 +275,12 @@ public class BFTest {
 	@Order(31)
     public void testRESTItemAddNewSubItem() {
         Item item = new Item();
-        item.project = null;
+        //item.project = null;
         item.name = "sub project 2";
         item.imageURL = "sub.jpg";
         item.level = 1;
-        Item mainItem = Item.findById(10L);
-        item.item = mainItem;
+        //Item mainItem = Item.findById(10L);
+        //item.item = mainItem;
        
 		ValidatableResponse response = 
 				given().contentType("application/json")
