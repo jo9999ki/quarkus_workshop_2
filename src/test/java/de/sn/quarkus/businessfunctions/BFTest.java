@@ -33,7 +33,7 @@ import io.restassured.response.ValidatableResponse;
 public class BFTest {
 	
 	private static long identifier;
-	private static long identifier1;
+	private static long identifier1; 
 		
 	@Test
 	@Transactional
